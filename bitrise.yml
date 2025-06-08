@@ -2,37 +2,94 @@
 format_version: '11'
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
+app:
+  envs:
+  - BITRISE_PROJECT_TYPE: other
+  - SKIP_PODFILE_SCAN: "true"
+
 workflows:
   run_tests:
-    description: USA Home iOS Build
+    description: USA Home iOS Build - Manual Configuration
+    before_run: []
+    after_run: []
     steps:
-    - git-clone@8: {}
+    - git-clone@8:
+        title: Git Clone Repository
     - script@1:
-        title: Install Dependencies and Setup iOS
+        title: Complete iOS Setup and Build
         inputs:
         - content: |
             #!/usr/bin/env bash
             set -ex
             
+            echo "=== USA Home iOS Build ==="
+            echo "Working directory: $(pwd)"
+            echo "Available files:"
+            ls -la
+            
             echo "Installing npm dependencies..."
             npm install
             
-            echo "Checking Capacitor installation..."
-            ls -la node_modules/@capacitor/ios/
+            echo "Verifying Capacitor installation..."
+            if [ -d "node_modules/@capacitor/ios" ]; then
+                echo "✓ Capacitor iOS found"
+                ls -la node_modules/@capacitor/ios/
+            else
+                echo "✗ Capacitor iOS not found"
+                exit 1
+            fi
+            
+            echo "Checking iOS directory..."
+            if [ -d "ios/App" ]; then
+                echo "✓ iOS App directory found"
+                ls -la ios/App/
+            else
+                echo "✗ iOS App directory not found"
+                exit 1
+            fi
             
             echo "Changing to iOS app directory..."
             cd ios/App
             
-            echo "Installing CocoaPods dependencies..."
-            pod install --verbose
+            echo "Current directory: $(pwd)"
+            echo "Podfile exists:"
+            ls -la Podfile
             
-            echo "Dependencies installed successfully"
+            echo "Installing CocoaPods dependencies with verbose output..."
+            pod install --verbose --no-repo-update
+            
+            echo "Verifying workspace creation..."
+            if [ -f "App.xcworkspace/contents.xcworkspacedata" ]; then
+                echo "✓ Workspace created successfully"
+                ls -la App.xcworkspace/
+            else
+                echo "✗ Workspace creation failed"
+                exit 1
+            fi
+            
+            echo "=== Build setup completed successfully ==="
+            
+            # Return to root for next steps
+            cd ../..
     - xcode-test@4:
+        title: Run Xcode Tests
         inputs:
         - project_path: ios/App/App.xcworkspace
         - scheme: App
         - destination: platform=iOS Simulator,name=iPhone 15,OS=latest
     - deploy-to-bitrise-io@2:
+        title: Deploy Artifacts
         inputs:
         - notify_user_groups: none
         - is_enable_public_page: false
+
+  primary:
+    description: Fallback workflow
+    steps:
+    - script@1:
+        title: No-op step
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            echo "Use run_tests workflow instead"
+            exit 0
