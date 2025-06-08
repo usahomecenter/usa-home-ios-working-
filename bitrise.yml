@@ -3,16 +3,34 @@ format_version: '11'
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 workflows:
-  build:
+  run_tests:
+    description: USA Home iOS Build
     steps:
     - git-clone@8: {}
+    - script@1:
+        title: Install Node Dependencies
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            
+            echo "Installing npm dependencies..."
+            npm install
+            
+            echo "Checking Capacitor installation..."
+            ls -la node_modules/@capacitor/ios/
+            
+            echo "Node dependencies installed successfully"
     - cocoapods-install@2:
         inputs:
-        - source_root_path: ios/App
-    - xcode-build-for-simulator@0:
+        - source_root_path: "$BITRISE_SOURCE_DIR"
+        - podfile_path: ios/App/Podfile
+    - xcode-test@4:
         inputs:
         - project_path: ios/App/App.xcworkspace
         - scheme: App
-        - configuration: Debug
-        - simulator_device: iPhone 15
-    - deploy-to-bitrise-io@2: {}
+        - destination: platform=iOS Simulator,name=iPhone 15,OS=latest
+    - deploy-to-bitrise-io@2:
+        inputs:
+        - notify_user_groups: none
+        - is_enable_public_page: false
