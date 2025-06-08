@@ -1,0 +1,83 @@
+name: iOS Build and Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  ios-build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install Dependencies
+      run: |
+        echo "Installing npm dependencies..."
+        npm install
+        
+    - name: Setup Capacitor
+      run: |
+        echo "Setting up Capacitor..."
+        npx cap sync ios
+        echo "Capacitor CLI version:"
+        npx cap --version
+        
+    - name: Verify Capacitor Installation
+      run: |
+        echo "Verifying Capacitor iOS installation..."
+        ls -la node_modules/@capacitor/ios/
+        echo "Checking podspec files:"
+        ls -la node_modules/@capacitor/ios/*.podspec
+        
+    - name: Setup iOS Environment
+      run: |
+        echo "Setting up iOS environment..."
+        sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+        xcodebuild -version
+        
+    - name: Install CocoaPods Dependencies
+      run: |
+        echo "Installing CocoaPods dependencies..."
+        cd ios/App
+        pod install --verbose
+        echo "Workspace created successfully:"
+        ls -la App.xcworkspace/
+        
+    - name: Build iOS App
+      run: |
+        echo "Building iOS application..."
+        cd ios/App
+        xcodebuild -workspace App.xcworkspace \
+                   -scheme App \
+                   -configuration Debug \
+                   -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+                   build
+                   
+    - name: Run iOS Tests
+      run: |
+        echo "Running iOS tests..."
+        cd ios/App
+        xcodebuild -workspace App.xcworkspace \
+                   -scheme App \
+                   -configuration Debug \
+                   -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+                   test
+                   
+    - name: Archive Build Artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-build-artifacts
+        path: |
+          ios/App/build/
+          ios/App/App.xcworkspace/
