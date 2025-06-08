@@ -8,7 +8,7 @@ workflows:
     steps:
     - git-clone@8: {}
     - script@1:
-        title: Install Node Dependencies
+        title: Install Dependencies and Setup iOS
         inputs:
         - content: |
             #!/usr/bin/env bash
@@ -20,11 +20,13 @@ workflows:
             echo "Checking Capacitor installation..."
             ls -la node_modules/@capacitor/ios/
             
-            echo "Node dependencies installed successfully"
-    - cocoapods-install@2:
-        inputs:
-        - source_root_path: "$BITRISE_SOURCE_DIR/ios/App"
-        - podfile_path: Podfile
+            echo "Changing to iOS app directory..."
+            cd ios/App
+            
+            echo "Installing CocoaPods dependencies..."
+            pod install --verbose
+            
+            echo "Dependencies installed successfully"
     - xcode-test@4:
         inputs:
         - project_path: ios/App/App.xcworkspace
