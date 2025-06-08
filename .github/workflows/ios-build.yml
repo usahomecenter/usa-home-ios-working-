@@ -25,12 +25,19 @@ jobs:
         echo "Installing npm dependencies..."
         npm install
         
+    - name: Setup Capacitor
+      run: |
+        echo "Setting up Capacitor..."
+        npx cap sync ios
+        echo "Capacitor CLI version:"
+        npx cap --version
+        
     - name: Verify Capacitor Installation
       run: |
         echo "Verifying Capacitor iOS installation..."
         ls -la node_modules/@capacitor/ios/
-        echo "Capacitor CLI version:"
-        npx cap --version
+        echo "Checking podspec files:"
+        ls -la node_modules/@capacitor/ios/*.podspec
         
     - name: Setup iOS Environment
       run: |
