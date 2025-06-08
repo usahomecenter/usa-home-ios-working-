@@ -23,8 +23,8 @@ workflows:
             echo "Node dependencies installed successfully"
     - cocoapods-install@2:
         inputs:
-        - source_root_path: "$BITRISE_SOURCE_DIR"
-        - podfile_path: ios/App/Podfile
+        - source_root_path: "$BITRISE_SOURCE_DIR/ios/App"
+        - podfile_path: Podfile
     - xcode-test@4:
         inputs:
         - project_path: ios/App/App.xcworkspace
